@@ -380,6 +380,49 @@ def get_stats():
         }), 500
 
 
+@app.route('/api/delete', methods=['POST'])
+def delete_code():
+    """删除激活码（需要管理员密码）"""
+    try:
+        data = request.json
+        admin_password = data.get('admin_password', '')
+        code = data.get('code', '')
+        
+        # 验证管理员密码
+        if admin_password != os.getenv('ADMIN_PASSWORD', 'admin123'):
+            logger.warning(f"⚠️ 删除激活码：密码错误")
+            return jsonify({
+                "success": False,
+                "message": "管理员密码错误"
+            }), 401
+        
+        # 验证激活码是否存在
+        code_hash = hashlib.sha256(code.encode()).hexdigest()
+        if code_hash not in db.db["codes"]:
+            return jsonify({
+                "success": False,
+                "message": "激活码不存在"
+            }), 404
+        
+        # 删除激活码
+        del db.db["codes"][code_hash]
+        db.save()
+        
+        logger.info(f"🗑️ 删除激活码: {code}")
+        
+        return jsonify({
+            "success": True,
+            "message": "删除成功"
+        })
+        
+    except Exception as e:
+        logger.error(f"❌ 删除激活码失败: {str(e)}")
+        return jsonify({
+            "success": False,
+            "message": f"删除失败: {str(e)}"
+        }), 500
+
+
 # ========== 错误处理 ==========
 
 @app.errorhandler(404)
