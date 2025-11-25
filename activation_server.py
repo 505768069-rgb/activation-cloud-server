@@ -29,7 +29,7 @@ CORS(app)
 # 激活密钥（必须与客户端一致）
 SECRET_KEY = os.getenv(
     "ACTIVATION_SECRET_KEY",
-    "SIQIU-2025-AI-ASSISTANT-SECRET-KEY-PLEASE-CHANGE"
+    "TD9mYov98Dh9-WOBzPJgofHH7cgatgudx0K-z3r9J80"  # 与客户端一致的密钥
 )
 
 # 激活数据库文件
@@ -406,7 +406,15 @@ def delete_code():
         
         # 删除激活码
         del db.db["codes"][code_hash]
-        db.save()
+        # 兼容旧版本：检查方法是否存在
+        if hasattr(db, 'save_database'):
+            db.save_database()
+        elif hasattr(db, 'save'):
+            db.save()
+        else:
+            # 手动保存
+            with open(db.db_file, 'w', encoding='utf-8') as f:
+                json.dump(db.db, f, ensure_ascii=False, indent=2)
         
         logger.info(f"🗑️ 删除激活码: {code}")
         
